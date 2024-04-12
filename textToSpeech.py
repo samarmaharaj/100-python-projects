@@ -1,8 +1,8 @@
 from gtts import gTTS
 import os
 
-def generate_text_to_speech(text, language='en', tld='co.uk'):
-    tts = gTTS(text=text, lang=language, tld=tld, slow=False)
+def generate_text_to_speech(text):
+    tts = gTTS(text=text, lang='en', tld='co.uk', slow=False)
     tts.save("output.mp3")
     os.startfile("output.mp3")
 
