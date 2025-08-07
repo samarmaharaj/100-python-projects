@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beam Bending Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Beam Bending Simulation</h1>
+
+        <div class="input-group">
+            <label>Beam Length (meters): </label>
+            <input type="number" id="beamLength" title="Beam Length" placeholder="Enter beam length" required>
+        </div>
+
+        <div class="input-group">
+            <label>Pinned Support Position (meters): </label>
+            <input type="number" id="pinnedSupport" title="Pinned Support Position" placeholder="Enter pinned support position" required>
+        </div>
+
+        <div class="input-group">
+            <label>Rolling Support Position (meters): </label>
+            <input type="number" id="rollingSupport" title="Rolling Support Position" placeholder="Enter rolling support position" required>
+        </div>
+
+        <div class="input-group">
+            <label>Number of Point Loads: </label>
+            <input type="number" id="numPointLoads" min="0" title="Number of Point Loads" placeholder="Enter number of point loads" required>
+        </div>
+
+        <div id="pointLoadInputs"></div>
+
+        <div class="input-group">
+            <label>Number of Distributed Loads: </label>
+            <input type="number" id="numDistributedLoads" min="0" title="Number of Distributed Loads" placeholder="Enter number of distributed loads" required>
+        </div>
+
+        <div id="distributedLoadInputs"></div>
+
+        <button onclick="generatePlot()">Generate Plot</button>
+
+        <h2>Bending Moment Diagram</h2>
+        <img id="momentPlot" src="" alt="Bending Moment Plot">
+        
+        <h2>Shear Force Diagram</h2>
+        <img id="shearPlot" src="" alt="Shear Force Plot">
+    </div>
+
+    <script>
+        document.getElementById("numPointLoads").addEventListener("input", updatePointLoadInputs);
+        document.getElementById("numDistributedLoads").addEventListener("input", updateDistributedLoadInputs);
+
+        function updatePointLoadInputs() {
+            const numPointLoads = document.getElementById("numPointLoads").value;
+            const container = document.getElementById("pointLoadInputs");
+            container.innerHTML = '';
+            for (let i = 0; i < numPointLoads; i++) {
+                container.innerHTML += `<div class="input-group">
+                    <label>Point Load ${i + 1} Value (kN): </label>
+                    <input type="number" id="pointLoadValue${i}" required>
+                    <label> Position (meters): </label>
+                    <input type="number" id="pointLoadPosition${i}" required>
+                </div>`;
+            }
+        }
+
+        function updateDistributedLoadInputs() {
+            const numDistributedLoads = document.getElementById("numDistributedLoads").value;
+            const container = document.getElementById("distributedLoadInputs");
+            container.innerHTML = '';
+            for (let i = 0; i < numDistributedLoads; i++) {
+                container.innerHTML += `<div class="input-group">
+                    <label>Distributed Load ${i + 1} Start Value (kN/m): </label>
+                    <input type="number" id="distributedLoadStartValue${i}" required>
+                    <label> End Value (kN/m): </label>
+                    <input type="number" id="distributedLoadEndValue${i}" required>
+                    <label> Start Position (meters): </label>
+                    <input type="number" id="distributedLoadStartPosition${i}" required>
+                    <label> End Position (meters): </label>
+                    <input type="number" id="distributedLoadEndPosition${i}" required>
+                </div>`;
+            }
+        }
+
+        function generatePlot() {
+            const beamLength = parseFloat(document.getElementById("beamLength").value);
+            const pinnedSupport = parseFloat(document.getElementById("pinnedSupport").value);
+            const rollingSupport = parseFloat(document.getElementById("rollingSupport").value);
+
+            let pointLoads = [];
+            const numPointLoads = parseInt(document.getElementById("numPointLoads").value);
+            for (let i = 0; i < numPointLoads; i++) {
+                const value = parseFloat(document.getElementById(`pointLoadValue${i}`).value);
+                const position = parseFloat(document.getElementById(`pointLoadPosition${i}`).value);
+                pointLoads.push({ value, position });
+            }
+
+            let distributedLoads = [];
+            const numDistributedLoads = parseInt(document.getElementById("numDistributedLoads").value);
+            for (let i = 0; i < numDistributedLoads; i++) {
+                const startValue = parseFloat(document.getElementById(`distributedLoadStartValue${i}`).value);
+                const endValue = parseFloat(document.getElementById(`distributedLoadEndValue${i}`).value);
+                const startPosition = parseFloat(document.getElementById(`distributedLoadStartPosition${i}`).value);
+                const endPosition = parseFloat(document.getElementById(`distributedLoadEndPosition${i}`).value);
+                distributedLoads.push({ startValue, endValue, startPosition, endPosition });
+            }
+
+            fetch('/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    beam_length: beamLength,
+                    pinned_support: pinnedSupport,
+                    rolling_support: rollingSupport,
+                    point_loads: pointLoads,
+                    distributed_loads: distributedLoads
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("momentPlot").src = data.moment_plot;
+                document.getElementById("shearPlot").src = data.shear_plot;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
