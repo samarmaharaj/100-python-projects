@@ -4,7 +4,7 @@ from gtts import gTTS
 from pydub import AudioSegment
 
 # Initialize ResembleAI with your API token
-resembleai.api_key = 'nJyWy50A1l6kv1NuQsnDqQtt'
+resembleai.api_key = <API_KEY>
 
 def clone_voice(sample_audio_path, voice_name):
     # Upload voice sample to ResembleAI
